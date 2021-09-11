@@ -1,9 +1,5 @@
 import Foundation
 
-struct HSBNetwork {
-    var text = "Hello, World!"
-}
-
 public enum HTTPMethod: String {
     case put    = "PUT"
     case post   = "POST"
@@ -43,34 +39,40 @@ public extension Request {
         return request
     }
 }
-public struct DataLoader {
-    
-    public init () {}
-    
-    public func request<T: Decodable>(_ request: Request, decodable: T.Type, then handler: @escaping (Result<T, NetworkError>) -> Void) {
+
+
+public struct HSBNetwork {
+    public func request<T: Decodable>(_ request: Request, decodable: T.Type, completion: @escaping (Result<T, NetworkError>) -> Void) {
+        
         let urlSession = URLSession(configuration: .default)
-        let task = urlSession.dataTask(with: request.build()) {   data, urlResponse, error in
-            if let _ = error {
-                handler(.failure(.cannotGetData))
-            } else {
-                if let data = data {
-                    do {
-                        let decodedData = try decoder(with: data, decodable:    decodable)
-                        handler(.success(decodedData))
-                    } catch {
-                        handler(.failure(.cannotDecode))
-                    }
-                } else {
-                    handler(.failure(.cannotGetData))
-                }
+        let urlRequest = request.build()
+        
+        let task = urlSession.dataTask(with: urlRequest) { data, response, error in
+            
+            if let err = error {
+                completion(.failure(.cannotGetData))
+                print(err.localizedDescription)
+                return
+            }
+            
+            guard response != nil, let data = data else {
+                completion(.failure(.cannotGetData))
+                return
+            }
+            
+            do {
+                let decodedData = try decoder(with: data, decodable: decodable)
+                completion(.success(decodedData))
+            } catch {
+                completion(.failure(.cannotDecode))
             }
         }
-        
         task.resume()
     }
+    
     // Decoder
-    public func decoder<T: Decodable>(_ decoder: JSONDecoder =  JSONDecoder(), with data: Data, decodable: T.Type) throws -> T {
-        let decodedData = try decoder.decode(T.self, from: data)
+    public func decoder<T: Decodable>(with data: Data, decodable: T.Type) throws -> T {
+        let decodedData = try JSONDecoder().decode(T.self, from: data)
         return decodedData
     }
 }
