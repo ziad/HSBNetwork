@@ -42,6 +42,9 @@ public extension Request {
 
 
 public struct HSBNetwork {
+    
+    public init () {}
+    
     public func request<T: Decodable>(_ request: Request, decodable: T.Type, completion: @escaping (Result<T, NetworkError>) -> Void) {
         
         let urlSession = URLSession(configuration: .default)
